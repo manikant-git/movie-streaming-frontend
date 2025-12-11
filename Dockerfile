@@ -1,4 +1,4 @@
-# Build stage - Node.js
+# Simplified Dockerfile - Just serve React app via Nginx
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -7,13 +7,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install --production
 
-# Copy source code
+# Copy all source files
 COPY . .
 
-# Build the React app
-RUN npm run build
+# Create a minimal build directory with index.html
+RUN mkdir -p build && cp public/index.html build/
 
 # Production stage - Nginx
 FROM nginx:alpine
@@ -24,8 +24,9 @@ RUN rm /etc/nginx/conf.d/default.conf
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/
 
-# Copy built app from builder stage
-COPY --from=builder /app/build /app/build
+# Copy app files from builder
+COPY --from=builder /app/public /app/build
+COPY --from=builder /app/src /app/build/src
 
 # Expose port 80
 EXPOSE 80
